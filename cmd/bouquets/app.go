@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/gradecak/bouquets/internal/assembler"
 	"github.com/gradecak/bouquets/internal/parser"
@@ -41,30 +43,49 @@ func NewApp(designs []string) (*App, error) {
 }
 
 func (a *App) Run(flowerStream *bufio.Scanner) {
-	outchan := make(chan *types.Bouquet, 500)
-	inchan := make(chan *types.Flower, 5000)
-	end := make(chan bool)
+	var (
+		outchan           = make(chan *types.Bouquet, 5000)
+		inchanL           = make(chan *types.Flower, 5000)
+		inchanS           = make(chan *types.Flower, 5000)
+		endS              = make(chan bool)
+		endL              = make(chan bool)
+		largeAssembler, _ = assembler.New(a.largeDesigns)
+		smallAssembler, _ = assembler.New(a.smallDesigns)
+	)
 
 	go printResults(outchan)
-	largeAssembler, _ := assembler.New()
-	go largeAssembler.Run(inchan, outchan, end)
+	go largeAssembler.Run(inchanL, outchan, endL)
+	go smallAssembler.Run(inchanS, outchan, endS)
 
+	// begin parsing and sorting input stream of flowers
 	for flowerStream.Scan() {
-		flowerStream.Text()
-		inchan <- nil
+		flower, err := a.parser.ParseFlower(flowerStream.Text())
+		if err != nil {
+			log.Printf("malformed flower found in stream... skipping (reason: %v)", err.Error())
+			continue
+		}
+
+		// after parsing flower sort it into the appropriate assembler
+		if flower.Size == 'L' {
+			inchanL <- flower
+		} else {
+			inchanS <- flower
+		}
 	}
 
-	for len(outchan) > 0 || len(inchan) > 0 {
-		// wait for printing to finish and for the processing of all
-		// flowers to be complete
+	// input stream has finished. wait for all processing to finish and
+	// then clean up
+	for len(outchan) > 0 || len(inchanL) > 0 || len(inchanS) > 0 {
+		// sleep the thread to free up available resources
+		time.Sleep(time.Second)
 	}
+	endL <- true
+	endS <- true
 }
 
 func printResults(in chan *types.Bouquet) {
-	log.Print("got to here")
 	for {
-		x := <-in
-		log.Print("got to here")
-		log.Printf("%+v", x)
+		bouquet := <-in
+		fmt.Printf("%s\n", bouquet)
 	}
 }

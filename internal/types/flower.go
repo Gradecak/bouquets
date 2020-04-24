@@ -1,6 +1,6 @@
 package types
 
 type Flower struct {
-	Species rune
+	Species int
 	Size    rune
 }

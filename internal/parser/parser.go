@@ -18,7 +18,7 @@ var designExp = regexp.MustCompile(`^(?P<name>[A-Z])(?P<size>L|S)(?P<flowers>([\
 var flowerExp = regexp.MustCompile(`([\d]+[a-z]{1})`)
 
 func (_ Parser) ParseDesign(line string) (*types.BouquetDesign, error) {
-	design := &types.BouquetDesign{}
+	design := &types.BouquetDesign{Design: make(map[int]int)}
 	match := designExp.FindStringSubmatch(line)
 
 	// go over all of the captured named groups to extract parts of
@@ -39,7 +39,6 @@ func (_ Parser) ParseDesign(line string) (*types.BouquetDesign, error) {
 				}
 				design.Total = total
 			case "flowers":
-				design.Design = make(map[rune]int)
 				// match all of the individual flowers in flowers capture
 				// group
 				flowers := flowerExp.FindAllString(match[i], -1)
@@ -49,15 +48,26 @@ func (_ Parser) ParseDesign(line string) (*types.BouquetDesign, error) {
 						return nil, errors.New("could not extract flower composition of design")
 					}
 					// last character of each match is the species
-					species := rune(flower[len(flower)-1])
+					species := int(flower[len(flower)-1])
 					design.Design[species] = number
 				}
 			}
 		}
 	}
+	// preprocess the design to calculate the number of "filler" flowers
+	// required. This will save some processing time when using it
+	// during the bouquet assembly process
+	total := 0
+	for _, required := range design.Design {
+		total = total + required
+	}
+	design.FillAmount = design.Total - total
 	return design, nil
 }
 
 func (_ Parser) ParseFlower(line string) (*types.Flower, error) {
-	return nil, errors.New("not implemented")
+	if len(line) != 2 {
+		return nil, errors.New("flower specification is of invalid format")
+	}
+	return &types.Flower{Species: int(line[0]), Size: rune(line[1])}, nil
 }
