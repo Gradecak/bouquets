@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 
@@ -21,6 +22,10 @@ func (_ Parser) ParseDesign(line string) (*types.BouquetDesign, error) {
 	design := &types.BouquetDesign{Design: make(map[int]int)}
 	match := designExp.FindStringSubmatch(line)
 
+	if len(match) == 0 {
+		return nil, errors.New("failed to parse design spec")
+	}
+
 	// go over all of the captured named groups to extract parts of
 	// design
 	for i, group := range designExp.SubexpNames() {
@@ -29,6 +34,7 @@ func (_ Parser) ParseDesign(line string) (*types.BouquetDesign, error) {
 			case "name":
 				// since we are only matching a single character in regex
 				// we're relatively safe to just take index 0
+				fmt.Printf("%+v", match)
 				design.Name = rune(match[i][0])
 			case "size":
 				design.Size = rune(match[i][0])

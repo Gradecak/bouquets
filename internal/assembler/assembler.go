@@ -1,6 +1,7 @@
 package assembler
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gradecak/bouquets/internal/types"
@@ -34,6 +35,7 @@ func (a *Assembler) Run(in chan *types.Flower, out chan *types.Bouquet, end chan
 				for species, amount := range bouquet.Flowers {
 					a.flowers[species] = a.flowers[species] - amount
 				}
+				fmt.Printf("found bouquet %+v", bouquet)
 				out <- bouquet
 			}
 		}
