@@ -2,7 +2,6 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 
@@ -34,7 +33,6 @@ func (_ Parser) ParseDesign(line string) (*types.BouquetDesign, error) {
 			case "name":
 				// since we are only matching a single character in regex
 				// we're relatively safe to just take index 0
-				fmt.Printf("%+v", match)
 				design.Name = rune(match[i][0])
 			case "size":
 				design.Size = rune(match[i][0])
